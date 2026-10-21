@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>2027年度 私立医学部入試日程・会場マップ</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
 <style>
 :root{--navy:#102a43;--blue:#1769aa;--bg:#f3f6fa;--line:#dbe3ec}*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Yu Gothic",Meiryo,sans-serif;color:#203040;background:var(--bg)}header{background:linear-gradient(120deg,#102a43,#1769aa);color:white;padding:22px clamp(16px,4vw,48px)}header h1{font-size:clamp(22px,3vw,34px);margin:0 0 8px}header p{margin:0;color:#e2edf7}main{max-width:1600px;margin:auto;padding:16px;display:grid;grid-template-columns:minmax(320px,440px) minmax(0,1fr);gap:16px}.panel{background:white;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 4px 18px #19334d0a;min-width:0}.panel h2{font-size:17px;margin:0;padding:14px 16px;border-bottom:1px solid var(--line)}.controls{padding:12px;display:grid;gap:9px}.controls input,.controls select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;background:#fff}.stats{padding:8px 14px;background:#f8fafc;font-size:12px;color:#526579}.results{max-height:48vh;overflow:auto}.loc{padding:13px 15px;border-bottom:1px solid #edf1f5}.loc strong{display:block;font-size:14px}.loc .sub{font-size:12px;color:#617284;margin:4px 0 8px}button,.linkbtn{border:0;border-radius:7px;background:var(--blue);color:#fff;padding:8px 11px;font:inherit;font-size:12px;cursor:pointer;text-decoration:none;display:inline-block;margin:2px 3px 2px 0}button:hover,.linkbtn:hover{background:#0d4f83}.secondary{background:#526579}#map{height:65vh;min-height:420px;width:100%;background:#e8eef3}.mapnote{padding:10px 14px;font-size:12px;color:#617284;border-top:1px solid var(--line)}#status{padding:10px 14px;font-size:13px;color:#1769aa;background:#f8fafc;min-height:40px}#schedule{max-height:40vh;overflow:auto}.event{padding:10px 14px;border-bottom:1px solid #edf1f5;font-size:13px;display:flex;gap:12px}.date{min-width:46px;color:var(--blue);font-weight:700}.event button{margin-left:auto;white-space:nowrap}.notice{margin:0;padding:12px 16px;font-size:12px;color:#526579;background:#f8fafc;border-top:1px solid var(--line)}.pill{display:inline-block;border-radius:999px;background:#e7f0fb;color:#15518a;padding:3px 8px;font-size:11px;margin:2px}.hidden{display:none}@media(max-width:900px){main{grid-template-columns:1fr;padding:10px}#map{height:55vh;min-height:350px}.results{max-height:42vh}}
 </style></head><body>
@@ -28,6 +28,8 @@
     'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
   ];
+  // SRI: ブラウザでLeaflet本体の内容を検証し、想定外の改変を検出する
+  const integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
   window.loadLeaflet = function(done){
     let i=0;
     function next(){
@@ -35,6 +37,9 @@
       if(i>=sources.length){done(false);return;}
       const script=document.createElement('script');
       script.src=sources[i++];
+      script.integrity=integrity;
+      script.crossOrigin='anonymous';
+      script.referrerPolicy='no-referrer';
       script.onload=function(){ if(window.L) done(true); else next(); };
       script.onerror=next;
       document.head.appendChild(script);
@@ -54,7 +59,7 @@ const schools=[...new Set(DATA.locations.flatMap(x=>x.school.split(/[・、]/)))
 [...new Set(DATA.schedule.map(x=>x.date))].forEach(d=>$('dateFilter').add(new Option(d,d)));
 function eventsForDate(){const d=$('dateFilter').value;return DATA.schedule.filter(e=>!d||e.date===d)}
 function matches(x){const q=$('q').value.trim().toLowerCase(),c=$('city').value,s=$('school').value,d=$('dateFilter').value;let ok=(!q||[x.school,x.city,x.name,x.address].join(' ').toLowerCase().includes(q))&&(!c||x.city===c)&&(!s||x.school.includes(s));if(d){const texts=eventsForDate().map(e=>e.text.replace(/（[^）]*）|\([^)]*\)/g,''));ok=ok&&texts.some(t=>x.school.split(/[・、]/).some(n=>n&&t.includes(n)))}return ok}
-function render(){active=DATA.locations.filter(matches);$('locCount').textContent=`${active.length} / ${DATA.locations.length} 会場${$('dateFilter').value?'（'+$('dateFilter').value+'に関連する大学）':''}`;$('locations').innerHTML=active.map((x,i)=>`<div class="loc"><strong>${esc(x.name)}</strong><div class="sub">${esc(x.school)} ／ ${esc(x.city)}<br>${esc(x.address)}</div>${x.lat!=null&&x.lng!=null?`<button type="button" data-i="${i}">地図に表示</button>`:'<span class="pill">座標データ未提供</span>'}<a class="linkbtn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.address+' '+x.name)}">Google Maps</a></div>`).join('')||'<div class="loc">条件に一致する会場がありません。日程・大学・地域の絞り込みを解除してください。</div>'; $('locations').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>showVenue(active[+b.dataset.i]));if(map)renderMapMarkers();}
+function render(){active=DATA.locations.filter(matches);$('locCount').textContent=`${active.length} / ${DATA.locations.length} 会場${$('dateFilter').value?'（'+$('dateFilter').value+'に関連する大学）':''}`;$('locations').innerHTML=active.map((x,i)=>`<div class="loc"><strong>${esc(x.name)}</strong><div class="sub">${esc(x.school)} ／ ${esc(x.city)}<br>${esc(x.address)}</div>${x.lat!=null&&x.lng!=null?`<button type="button" data-i="${i}">地図に表示</button>`:'<span class="pill">座標データ未提供</span>'}<a class="linkbtn" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.address+' '+x.name)}">Google Maps</a></div>`).join('')||'<div class="loc">条件に一致する会場がありません。日程・大学・地域の絞り込みを解除してください。</div>'; $('locations').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>showVenue(active[+b.dataset.i]));if(map)renderMapMarkers();}
 function popupContent(x){return '<b>'+esc(x.name)+'</b><br>'+esc(x.school)+'<br>'+esc(x.address)+'<br><a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(x.address+' '+x.name)+'">Google Mapsで開く</a>';}
 function renderMapMarkers(){if(!map||!markers)return;markers.clearLayers();const withCoords=active.filter(x=>Number.isFinite(x.lat)&&Number.isFinite(x.lng));withCoords.forEach(x=>L.marker([x.lat,x.lng]).addTo(markers).bindPopup(popupContent(x)));if(withCoords.length){const bounds=L.latLngBounds(withCoords.map(x=>[x.lat,x.lng]));map.fitBounds(bounds,{padding:[25,25],maxZoom:6});$('status').textContent=`事前埋め込み座標：${withCoords.length} / ${active.length} 会場を表示中。`; }else{$('status').textContent='選択中の会場に埋め込み済み座標がありません。Google Mapsリンクをご利用ください。';}}
 function showVenue(x){if(!map){$('status').textContent='地図が利用できません。Google Mapsリンクをご利用ください。';return;}if(!Number.isFinite(x.lat)||!Number.isFinite(x.lng)){$('status').textContent='この会場の座標は提供された座標表に含まれていません。Google Mapsリンクをご利用ください。';return;}map.setView([x.lat,x.lng],16);const marker=L.marker([x.lat,x.lng]).addTo(map).bindPopup(popupContent(x)).openPopup();$('status').textContent='表示中：'+x.name+'（埋め込み座標）';}
