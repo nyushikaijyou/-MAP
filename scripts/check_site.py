@@ -47,7 +47,8 @@ def fail(message):
 
 def main():
     if not INDEX.is_file():
-        return 1 if fail("index.html was not found") else 0
+        fail("index.html was not found")
+        return 1
 
     source = INDEX.read_text(encoding="utf-8")
     parser = MarkupInspector()
